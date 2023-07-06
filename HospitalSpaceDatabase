@@ -1,0 +1,1092 @@
+CREATE DATABASE HospitalSpace
+DROP DATABASE HospitalSpace
+
+USE HospitalSpace
+
+CREATE TABLE Illness_TYPE (
+   Illness_TYPE_ID INT IDENTITY (1,1) PRIMARY KEY,
+   Category_Name VARCHAR(50),
+   Descriptions VARCHAR(MAX)
+);
+CREATE TABLE Patient_TYPE (
+   Patient_TYPE_ID INT IDENTITY (1,1) PRIMARY KEY,
+   Membership_Name VARCHAR(50) NOT NULL,
+   Descriptions VARCHAR(MAX)
+);
+
+CREATE TABLE Staff_TYPE (
+   Staff_TYPE_ID INT IDENTITY (1,1) PRIMARY KEY,
+   Department_Name VARCHAR(50) NOT NULL,
+   Descriptions VARCHAR(MAX)
+);
+CREATE TABLE Equipment_TYPE (
+   Equipment_TYPE_ID INT IDENTITY (1,1) PRIMARY KEY,
+   Category_Name VARCHAR(50) NOT NULL,
+   Descriptions VARCHAR(MAX)
+);
+CREATE TABLE Appointment (
+  Appointment_ID INT IDENTITY (1,1) PRIMARY KEY,
+  Appointment_Date DATE,
+  Descriptions VARCHAR(MAX)
+);
+CREATE TABLE Patients (
+   Patient_ID INT IDENTITY (1,1) PRIMARY KEY,
+   Patient_TYPE_ID INT FOREIGN KEY REFERENCES Patient_TYPE(Patient_TYPE_ID),
+   First_Name VARCHAR(50) NOT NULL,
+   Last_Name VARCHAR(50) NOT NULL,
+   Age INT,
+   Gender VARCHAR(50),
+   Phone_Number VARCHAR(50),
+   Email VARCHAR(50),
+   Country VARCHAR(50)
+);
+CREATE TABLE Equipment (
+   Equipment_ID INT IDENTITY (1,1) PRIMARY KEY,
+   Equipment_TYPE_ID INT FOREIGN KEY REFERENCES Equipment_TYPE(Equipment_TYPE_ID),
+   Equipment_Name VARCHAR(50) NOT NULL,
+   Descriptions VARCHAR(MAX)
+);
+CREATE TABLE Illness (
+Illness_ID INT IDENTITY (1,1) PRIMARY KEY,
+   Illness_TYPE_ID INT FOREIGN KEY REFERENCES Illness_TYPE(Illness_TYPE_ID),
+   Illness_Name VARCHAR(50) NOT NULL,
+   Descriptions VARCHAR(MAX)
+);
+CREATE TABLE Staff (
+   Staff_ID INT IDENTITY (1,1) PRIMARY KEY,
+   Staff_TYPE_ID INT FOREIGN KEY REFERENCES Staff_TYPE(Staff_TYPE_ID),
+   First_Name VARCHAR(50) NOT NULL,
+   Last_Name VARCHAR(50) NOT NULL,
+   Job_Title VARCHAR(50) NOT NULL
+);
+CREATE TABLE Appointment_Patient (
+   Appointment_Patient_ID INT IDENTITY (1,1) PRIMARY KEY,
+   Appointment_ID INT FOREIGN KEY REFERENCES Appointment(Appointment_ID),
+   Patient_ID INT FOREIGN KEY REFERENCES Patients(Patient_ID),
+   Illness_ID INT FOREIGN KEY REFERENCES Illness(Illness_ID),
+   Arrival_Date DATE NOT NULL,
+   Departure_Date DATE NOT NULL
+);
+CREATE TABLE Appointment_Staff (
+   Appointment_Staff_ID INT IDENTITY (1,1) PRIMARY KEY,
+   Appointment_ID INT FOREIGN KEY REFERENCES Appointment(Appointment_ID),
+   Staff_ID INT FOREIGN KEY REFERENCES Staff(Staff_ID)
+);
+CREATE TABLE Staff_Equipment (
+   Staff_Equipment_ID INT IDENTITY (1,1) PRIMARY KEY,
+   Equipment_ID INT FOREIGN KEY REFERENCES Equipment(Equipment_ID),
+   Staff_ID INT FOREIGN KEY REFERENCES Staff(Staff_ID)
+);
+
+INSERT INTO Patient_TYPE(Membership_Name, Descriptions)
+VALUES
+('Enhanced', 'Highest level of membership status. Their insurance enables the highest specialized services and available equipment, along with add ons such as dental and eyecare.'),
+('Standard', 'This patient receives high level of care and equipment, along with dental care.'),
+('Basic', 'This patient receives the baseline level of care and stay time'),
+('No coverage', 'This person can receive pro bono services, or pay out of pocket.')
+
+INSERT INTO Equipment_TYPE(Category_Name, Descriptions)
+VALUES
+('Hospital bed', 'Specialized bed designed for hospitalized patients'),
+('X-ray machine', 'Produces images of internal structures to help see any problems'),
+('Ultrasound machine', 'Uses sound waves to produce images of internal organs'),
+('Electrocardiogram machine', 'Measures the electrical activity of the heart'),
+('Infusion pump', 'Delivers fluids into bloodstream of a patient')
+
+INSERT INTO Illness_TYPE(Category_Name, Descriptions)
+VALUES
+('Viral infections', 'virus gets inside the cell and tries to copy themselves in the cell of the patient'),
+('Fungal infections', 'Fungi gets overgrown or gets into the body through mouth, nose, or cuts in skin which can cause illness'),
+('Bacterial infections', 'single-celled organisms that can release toxins that cause sickness'),
+('Parasitic infections', 'parasites live off on other bodies to live and reproduce'),
+('Transmissible spongiform encephalopathies', 'TSE are caused by faulty proteins called proins where the body cannot get rid of it causing ig to build up')
+
+INSERT INTO Staff_TYPE(Department_Name, Descriptions)
+VALUES
+('Pediatrics', 'Department dealing with children and their diseases.'),
+('Pathology', 'Provides diagnostic information to patients and clinicians'),
+('Cardiology', 'Medical speciality dealing with the diagnosis and treatment of diseases and disorders of the heart'),
+('Orthopedics', 'Treat problems that affect your musculoskeletal system'),
+('Urology', 'Focuses on surgical and medical diseases of the urinary-tract system and the reproductive organs')
+
+
+GO 
+
+CREATE OR ALTER PROCEDURE GetEquipmentTYPEID
+    @GetEquipmentCategoryName VARCHAR(50),
+    @GetEquipmentTypeID INT OUTPUT
+
+AS 
+SET @GetEquipmentTypeID = (
+    SELECT Equipment_TYPE_ID
+    FROM Equipment_TYPE
+    WHERE Category_Name = @GetEquipmentCategoryName 
+    )
+
+GO
+
+CREATE OR ALTER PROCEDURE GetIllnessTYPEID
+    @GetIllnessCategoryName VARCHAR(50), 
+    @GetIllnessTypeID INT OUTPUT
+
+AS 
+SET @GetIllnessTypeID = (
+    SELECT Illness_TYPE_ID
+    FROM Illness_TYPE
+    WHERE Category_Name = @GetIllnessCategoryName 
+    )
+
+GO 
+
+CREATE OR ALTER PROCEDURE GetPatientTYPEID
+    @GetPatientMembershipName VARCHAR(50), 
+    @GetPatientTypeID INT OUTPUT
+
+AS 
+SET @GetPatientTypeID = (
+    SELECT Patient_TYPE_ID
+    FROM Patient_TYPE
+    WHERE Membership_Name = @GetPatientMembershipName 
+    )
+
+GO 
+
+CREATE OR ALTER PROCEDURE GetStaffTYPEID
+    @GetStaffDepartmentName VARCHAR(50),
+    @GetStaffTypeID INT OUTPUT
+
+AS 
+SET @GetStaffTypeID = (
+    SELECT Staff_TYPE_ID
+    FROM Staff_TYPE
+    WHERE Department_Name = @GetStaffDepartmentName 
+    )
+
+-- Insert Stored Procedures in entity tables 
+
+GO 
+
+CREATE OR ALTER PROCEDURE StoredAppointmentID
+    @AppointmentDate DATE,
+    @AppointmentDescriptions VARCHAR(MAX)
+
+AS
+
+BEGIN TRANSACTION N1
+INSERT INTO Appointment
+VALUES(@AppointmentDate, @AppointmentDescriptions)
+COMMIT TRANSACTION N1
+
+GO 
+
+CREATE OR ALTER PROCEDURE StoredEquipmentID
+    @EquipmentName VARCHAR(50),
+    @EquipmentDescriptions VARCHAR(MAX),
+    @EquipmentCategoryName VARCHAR(50)
+
+
+AS
+DECLARE @EquipmentTypeID INT -- foriegn key 
+EXEC GetEquipmentTYPEID
+    @GetEquipmentCategoryName = @EquipmentCategoryName, 
+    @GetEquipmentTypeID = @EquipmentTypeID OUTPUT
+
+BEGIN TRANSACTION N2
+INSERT INTO Equipment
+VALUES(@EquipmentTypeID, @EquipmentName, @EquipmentDescriptions)
+COMMIT TRANSACTION N2
+
+GO 
+
+CREATE OR ALTER PROCEDURE StoredIllnessID
+    @IllnessName VARCHAR(50),
+    @IllnessDescriptions VARCHAR(MAX),
+    @IllnessCategoryName VARCHAR(50)
+
+
+AS
+DECLARE @IllnessTypeID INT -- foriegn key 
+EXEC GetIllnessTYPEID
+    @GetIllnessCategoryName = @IllnessCategoryName,
+    @GetIllnessTypeID = @IllnessTypeID OUTPUT
+
+BEGIN TRANSACTION N3
+INSERT INTO Illness
+VALUES(@IllnessTypeID, @IllnessName, @IllnessDescriptions)
+COMMIT TRANSACTION N3
+
+GO 
+
+CREATE OR ALTER PROCEDURE StoredPatientID
+    @PatientFName VARCHAR(50),
+    @PatientLName VARCHAR(50),
+    @PatientAge INT,
+    @PatientGender VARCHAR(50), 
+    @PatientPhoneNumber VARCHAR(50), 
+    @PatientEmail VARCHAR(50), 
+    @PatientCountry VARCHAR(50), 
+    @PatientMembershipName VARCHAR(50)
+ 
+AS
+DECLARE @PatientTypeID INT -- foriegn key 
+EXEC GetPatientTYPEID
+    @GetPatientMembershipName = @PatientMembershipName,
+    @GetPatientTypeID = @PatientTypeID OUTPUT
+
+BEGIN TRANSACTION N4
+INSERT INTO Patients
+VALUES(@PatientTypeID, @PatientFName, @PatientLName, @PatientAge,@PatientGender, @PatientPhoneNumber, @PatientEmail, @PatientCountry)
+COMMIT TRANSACTION N4
+
+GO 
+
+CREATE OR ALTER PROCEDURE StoredStaffID
+    @StaffFname VARCHAR(50),
+    @StaffLname VARCHAR(50),
+    @StaffJobTitle VARCHAR(50),
+    @StaffDepartmentName VARCHAR(50)
+    
+AS
+DECLARE @StaffTypeID INT -- foriegn key 
+EXEC GetStaffTYPEID
+    @GetStaffDepartmentName = @StaffDepartmentName, 
+    @GetStaffTypeID = @StaffTypeID OUTPUT
+
+BEGIN TRANSACTION N5
+INSERT INTO Staff (Staff_TYPE_ID, First_Name, Last_Name, Job_Title)
+VALUES(@StaffTypeID, @StaffFname, @StaffLname, @StaffJobTitle)
+COMMIT TRANSACTION N5
+
+-- insert 12 rows into entity table 
+
+
+GO 
+
+EXEC StoredAppointmentID
+    @AppointmentDate = '2023-05-01',
+    @AppointmentDescriptions = 'Went to see what is causing the cold to last long'
+
+EXEC StoredAppointmentID
+    @AppointmentDate = '2023-03-02',
+    @AppointmentDescriptions = 'The patient was feeling sick to stomach for a long time'
+
+EXEC StoredAppointmentID
+    @AppointmentDate = '2023-01-22',
+    @AppointmentDescriptions = 'The patient felt chest pain and shortness of breath'
+
+EXEC StoredAppointmentID
+    @AppointmentDate = '2022-11-22',
+    @AppointmentDescriptions = 'The patient felt dizzy and short of breath'
+
+EXEC StoredAppointmentID
+    @AppointmentDate = '2023-01-14',
+    @AppointmentDescriptions = 'The patient realized start of memory loss in everyday life'
+
+EXEC StoredAppointmentID
+    @AppointmentDate = '2023-01-30',
+    @AppointmentDescriptions = 'The patient has a high fever and wants to check for pneumonia'
+
+EXEC StoredAppointmentID
+    @AppointmentDate = '2023-02-23',
+    @AppointmentDescriptions = 'The patient felt itching and soreness in vaginal area'
+
+EXEC StoredAppointmentID
+    @AppointmentDate = '2023-04-17',
+    @AppointmentDescriptions = 'The patient came for once a month visit for insulin pump therapy'
+
+EXEC StoredAppointmentID
+    @AppointmentDate = '2023-05-14',
+    @AppointmentDescriptions = 'The patient felt pain between the joints and wanted to know the reason why'
+
+EXEC StoredAppointmentID
+    @AppointmentDate = '2023-03-24',
+    @AppointmentDescriptions = 'The patient felt sick to the stomach that they cannot stand straight'
+
+EXEC StoredAppointmentID
+    @AppointmentDate = '2023-04-11',
+    @AppointmentDescriptions = 'The patient fell down which lead to a big wound'
+
+EXEC StoredAppointmentID
+    @AppointmentDate = '2023-03-23',
+    @AppointmentDescriptions = 'The patient felt their heart hurt more than twice every day'
+
+
+EXEC StoredEquipmentID
+    @EquipmentName = 'Hospital Bed #42132',
+    @EquipmentDescriptions = 'Used for ',
+    @EquipmentCategoryName = 'X-ray machine'
+
+EXEC StoredEquipmentID
+    @EquipmentName = '40X-1000X Trinocular Koehler LED Microscope with Touchscreen Imaging System',
+    @EquipmentDescriptions = 'intricate microscope that helps detect bacteria ',
+    @EquipmentCategoryName = 'X-ray machine'
+
+EXEC StoredEquipmentID
+    @EquipmentName = '4SonoMe Vet H5C10L',
+    @EquipmentDescriptions = 'cardiovascular ultrasound that enables staff to see the organs, especially around the heart',
+    @EquipmentCategoryName = 'Ultrasound machine'
+
+EXEC StoredEquipmentID
+    @EquipmentName = 'Cardio7-S',
+    @EquipmentDescriptions = 'Measures beating of the heard to make sure the beating is consistent',
+    @EquipmentCategoryName = 'Electrocardiogram machine'
+
+EXEC StoredEquipmentID
+    @EquipmentName = 'Hitachi Airis II .23',
+    @EquipmentDescriptions = 'MRI scan that shows a picture of the brain sctructure ',
+    @EquipmentCategoryName = 'Ultrasound machine'
+
+EXEC StoredEquipmentID
+    @EquipmentName = 'MedPlus Semi-Electric Hospital Bed #32418',
+    @EquipmentDescriptions = 'Beds provided for patients to stay overnight',
+    @EquipmentCategoryName = 'Hospital bed'
+
+EXEC StoredEquipmentID
+    @EquipmentName = '40X-1000X Trinocular Koehler',
+    @EquipmentDescriptions = 'microscope that enables to detect apparent diseases through sampling',
+    @EquipmentCategoryName = 'X-ray machine'
+
+EXEC StoredEquipmentID
+    @EquipmentName = 'Medtronic Minimed 770G Pump',
+    @EquipmentDescriptions = 'Pumps in insulin to patient and glucose monitoring',
+    @EquipmentCategoryName = 'Infusion pump'
+
+EXEC StoredEquipmentID
+    @EquipmentName = 'Americomp Chiropractic Digital X-Ray ',
+    @EquipmentDescriptions = 'Takes x-ray that enables doctor to closely examine broken bone or infections inside the body',
+    @EquipmentCategoryName = 'X-ray'
+
+EXEC StoredEquipmentID
+    @EquipmentName = 'Hospital Bed #42132',
+    @EquipmentDescriptions = 'Patients use the bed to get iv pumps or stay overnight',
+    @EquipmentCategoryName = 'Hospital Bed'
+
+EXEC StoredEquipmentID
+    @EquipmentName = 'Baxter Sigma Spectrum Infusion System',
+    @EquipmentDescriptions = 'Used to deliver controlled amount of nutrients and medication into the patient',
+    @EquipmentCategoryName = 'Infusion pump'
+
+EXEC StoredEquipmentID
+    @EquipmentName = 'Portable 12-lead ECG machine',
+    @EquipmentDescriptions = 'Used to detect any signs of heart disease through visualization of heart beating rythm',
+    @EquipmentCategoryName = 'Electrocardiogram machine '
+
+
+EXEC StoredIllnessID
+    @IllnessName = 'Bacterial Bronchitis',
+    @IllnessDescriptions = 'Airways in lungs called bronchial tubes become inflamed and cause coughing which produce mucus',
+    @IllnessCategoryName = 'Bacterial infections'
+
+EXEC StoredIllnessID
+    @IllnessName = 'Giardia',
+    @IllnessDescriptions = 'Gives mild or severe diarrhea, upset stomach, dehydration which makes the body feel weak and dizzy',
+    @IllnessCategoryName = 'Parasitic infections'
+
+EXEC StoredIllnessID
+    @IllnessName = 'Heart attack',
+    @IllnessDescriptions = 'The coronary artery gets blocked which leads to lack of blood supply',
+    @IllnessCategoryName = 'Viral infections'
+
+EXEC StoredIllnessID
+    @IllnessName = 'Arrhythmia',
+    @IllnessDescriptions = 'Problem of irregular rythm of the heart',
+    @IllnessCategoryName = 'Viral infections'
+
+EXEC StoredIllnessID
+    @IllnessName = 'Dementia',
+    @IllnessDescriptions = 'Problem with remembering and experiencing memory loss',
+    @IllnessCategoryName = 'Transmissible spongiform encephalopathies'
+
+EXEC StoredIllnessID
+    @IllnessName = 'Pneumonia',
+    @IllnessDescriptions = 'infection that affects one or both lungs and cause air sace of lung to fill with fluid or pus',
+    @IllnessCategoryName = 'Bacterial infections'
+
+EXEC StoredIllnessID
+    @IllnessName = 'Vaginal Candidiasis',
+    @IllnessDescriptions = 'Caused my overproduction of yeast which can cause irritation and itchiness of vagial area',
+    @IllnessCategoryName = 'Fungal infections'
+
+EXEC StoredIllnessID
+    @IllnessName = 'Type 1 Diabetes',
+    @IllnessDescriptions = 'Too much glucose in the body system and lack of insulin within the body',
+    @IllnessCategoryName = 'Viral infections'
+
+EXEC StoredIllnessID
+    @IllnessName = 'Arthritis',
+    @IllnessDescriptions = 'Inflammation of more than one joints that causes pain and stifness',
+    @IllnessCategoryName = 'Bacterial infections'
+
+EXEC StoredIllnessID
+    @IllnessName = 'Food Poisoning',
+    @IllnessDescriptions = 'When consumed not properly cooked food or expiration date has expired, severe stomachache will follow',
+    @IllnessCategoryName = 'Viral infections'
+
+EXEC StoredIllnessID
+    @IllnessName = 'Wound infection',
+    @IllnessDescriptions = 'The skin has swelled with pus that could potentially lead to fever',
+    @IllnessCategoryName = 'Bacterial infections'
+
+EXEC StoredIllnessID
+    @IllnessName = 'High blood pressure',
+    @IllnessDescriptions = 'The force of blood against artery wall is too high',
+    @IllnessCategoryName = 'Viral infections'
+
+
+EXEC StoredPatientID
+    @PatientFName = 'Allison',
+    @PatientLName = 'Adams',
+    @PatientAge = 10,
+    @PatientGender = 'Female', 
+    @PatientPhoneNumber = '4252217654', 
+    @PatientEmail = 'AlliAda@gmail.com', 
+    @PatientCountry = 'United States', 
+    @PatientMembershipName = 'Basic'
+
+EXEC StoredPatientID
+    @PatientFName = 'Ollie',
+    @PatientLName = 'Kim',
+    @PatientAge = 34,
+    @PatientGender = 'Male', 
+    @PatientPhoneNumber = '42523212654', 
+    @PatientEmail = 'OllieL@gmail.com', 
+    @PatientCountry = 'United States', 
+    @PatientMembershipName = 'Basic'
+
+EXEC StoredPatientID
+    @PatientFName = 'Jolly',
+    @PatientLName = 'Ran',
+    @PatientAge = 14,
+    @PatientGender = 'Female', 
+    @PatientPhoneNumber = '20623212654', 
+    @PatientEmail = 'Joli@gmail.com', 
+    @PatientCountry = 'United States', 
+    @PatientMembershipName = 'Standard'
+
+EXEC StoredPatientID
+    @PatientFName = 'Elizabeth',
+    @PatientLName = 'Shiu',
+    @PatientAge = 50,
+    @PatientGender = 'Female', 
+    @PatientPhoneNumber = '21023212654', 
+    @PatientEmail = 'EliS@gmail.com', 
+    @PatientCountry = 'United States', 
+    @PatientMembershipName = 'Enhanced'
+
+EXEC StoredPatientID
+    @PatientFName = 'Janes',
+    @PatientLName = 'Silverwood',
+    @PatientAge = 65,
+    @PatientGender = 'Male', 
+    @PatientPhoneNumber = '21053212260', 
+    @PatientEmail = 'SilverwoodJ@gmail.com', 
+    @PatientCountry = 'United States', 
+    @PatientMembershipName = 'Enhanced'
+
+EXEC StoredPatientID
+    @PatientFName = 'Hailey',
+    @PatientLName = 'Murakami',
+    @PatientAge = 11,
+    @PatientGender = 'Female', 
+    @PatientPhoneNumber = '2063217654', 
+    @PatientEmail = 'MuraHai@gmail.com', 
+    @PatientCountry = 'United States', 
+    @PatientMembershipName = 'Standard'
+
+EXEC StoredPatientID
+    @PatientFName = 'Annie',
+    @PatientLName = 'Johnson',
+    @PatientAge = 26,
+    @PatientGender = 'Female', 
+    @PatientPhoneNumber = '4257210654', 
+    @PatientEmail = 'AnJohn@gmail.com', 
+    @PatientCountry = 'United States', 
+    @PatientMembershipName = 'Basic'
+
+EXEC StoredPatientID
+    @PatientFName = 'Loey',
+    @PatientLName = 'Jeson',
+    @PatientAge = 12,
+    @PatientGender = 'Male', 
+    @PatientPhoneNumber = '2069210624', 
+    @PatientEmail = 'JesonLoey@gmail.com', 
+    @PatientCountry = 'United States', 
+    @PatientMembershipName = 'Enhanced'
+
+EXEC StoredPatientID
+    @PatientFName = 'Emma',
+    @PatientLName = 'Jean',
+    @PatientAge = 64,
+    @PatientGender = 'Female', 
+    @PatientPhoneNumber = '4251010734', 
+    @PatientEmail = 'EmmaJean@gmail.com', 
+    @PatientCountry = 'United States', 
+    @PatientMembershipName = 'No Coverage'
+
+EXEC StoredPatientID
+    @PatientFName = 'Olivia',
+    @PatientLName = 'Saka',
+    @PatientAge = 8,
+    @PatientGender = 'Female', 
+    @PatientPhoneNumber = '2054510732', 
+    @PatientEmail = 'sakalove@gmail.com', 
+    @PatientCountry = 'Canada', 
+    @PatientMembershipName = 'No Coverage'
+
+EXEC StoredPatientID
+    @PatientFName = 'Shin',
+    @PatientLName = 'Park',
+    @PatientAge = 17,
+    @PatientGender = 'Male', 
+    @PatientPhoneNumber = '4252310749', 
+    @PatientEmail = 'SPark@gmail.com', 
+    @PatientCountry = 'United States', 
+    @PatientMembershipName = 'Enhanced'
+
+EXEC StoredPatientID
+    @PatientFName = 'Sherlock',
+    @PatientLName = 'Holls',
+    @PatientAge = 36,
+    @PatientGender = 'Male', 
+    @PatientPhoneNumber = '4255510119', 
+    @PatientEmail = 'HollSher@gmail.com', 
+    @PatientCountry = 'Britain', 
+    @PatientMembershipName = 'No Coverage'
+
+
+EXEC StoredStaffID
+    @StaffFname = 'Jennifer',
+    @StaffLname = 'Stones',
+    @StaffJobTitle = 'pulmonologist',
+    @StaffDepartmentName = 'Pediatrics'
+
+EXEC StoredStaffID
+    @StaffFname = 'Adam',
+    @StaffLname = 'Steven',
+    @StaffJobTitle = 'gastrologist',
+    @StaffDepartmentName = 'Pathology'
+
+EXEC StoredStaffID
+    @StaffFname = 'Leo',
+    @StaffLname = 'Levine',
+    @StaffJobTitle = 'doctor',
+    @StaffDepartmentName = 'Cardiology'
+
+EXEC StoredStaffID
+    @StaffFname = 'James',
+    @StaffLname = 'Kim',
+    @StaffJobTitle = 'Nurse',
+    @StaffDepartmentName = 'Cardiology'
+
+EXEC StoredStaffID
+    @StaffFname = 'Julian',
+    @StaffLname = 'Leaven',
+    @StaffJobTitle = 'Radiologic technologist',
+    @StaffDepartmentName = 'Pathology'
+
+EXEC StoredStaffID
+    @StaffFname = 'Jimmy',
+    @StaffLname = 'Anderson',
+    @StaffJobTitle = 'Doctor',
+    @StaffDepartmentName = 'Pediatrics'
+
+EXEC StoredStaffID
+    @StaffFname = 'Lizzy',
+    @StaffLname = 'Peterson',
+    @StaffJobTitle = 'Doctor',
+    @StaffDepartmentName = 'Urology'
+
+EXEC StoredStaffID
+    @StaffFname = 'Sherman',
+    @StaffLname = 'Lizio',
+    @StaffJobTitle = 'Doctor',
+    @StaffDepartmentName = 'Pediatric'
+
+EXEC StoredStaffID
+    @StaffFname = 'Shinda',
+    @StaffLname = 'Jordan',
+    @StaffJobTitle = 'Nurse',
+    @StaffDepartmentName = 'Orthopedics'
+
+EXEC StoredStaffID
+    @StaffFname = 'Sarah',
+    @StaffLname = 'Shin',
+    @StaffJobTitle = 'Nurse',
+    @StaffDepartmentName = 'Pediatrics'
+
+EXEC StoredStaffID
+    @StaffFname = 'Jenn',
+    @StaffLname = 'Wang',
+    @StaffJobTitle = 'Doctor',
+    @StaffDepartmentName = 'Orthopedics'
+
+EXEC StoredStaffID
+    @StaffFname = 'Ariana',
+    @StaffLname = 'Liu',
+    @StaffJobTitle = 'Nurse',
+    @StaffDepartmentName = 'Urology'
+-- Create get procedures for entity tables 
+
+GO 
+
+CREATE OR ALTER PROCEDURE GetAppointmentID
+    @GetAppointmentDate DATE,
+    @GetAppointmentID INT OUTPUT
+ 
+AS 
+
+SET @GetAppointmentID = (
+    SELECT Appointment_ID
+    FROM Appointment
+    WHERE Appointment_Date = @GetAppointmentDate
+    )
+
+GO
+
+CREATE OR ALTER PROCEDURE GetEquipmentID
+    @GetEquipmentName VARCHAR(50),
+    @GetEquipmentCategoryName VARCHAR(50),
+    @GetEquipmentID INT OUTPUT
+
+AS 
+DECLARE @EquipmentTypeID INT
+EXEC GetEquipmentTYPEID
+    @GetEquipmentCategoryName = @GetEquipmentCategoryName, 
+    @GetEquipmentTypeID = @EquipmentTypeID OUTPUT
+
+SET @GetEquipmentID = (
+    SELECT Equipment_ID
+    FROM Equipment
+    WHERE Equipment_TYPE_ID = @EquipmentTypeID AND 
+        Equipment_Name = @GetEquipmentName
+    )
+
+GO 
+
+CREATE OR ALTER PROCEDURE GetIllnessID
+    @GetIllnessName VARCHAR(50),
+    @GetIllnessCategoryName VARCHAR(50),
+    @GetIllnessID INT OUTPUT
+
+AS
+DECLARE @IllnessTypeID INT -- foriegn key 
+EXEC GetIllnessTYPEID
+    @GetIllnessCategoryName = @GetIllnessCategoryName,
+    @GetIllnessTypeID = @IllnessTypeID OUTPUT
+
+SET @GetIllnessID = (
+    SELECT Illness_ID
+    FROM Illness
+    WHERE Illness_TYPE_ID = @IllnessTypeID AND 
+        Illness_Name = @GetIllnessName
+    )
+
+GO 
+
+CREATE OR ALTER PROCEDURE GetPatientID
+    @GetPatientFName VARCHAR(50),
+    @GetPatientLName VARCHAR(50),
+    @GetPatientAge INT,
+    @GetPatientGender VARCHAR(50), 
+    @GetPatientPhoneNumber VARCHAR(50), 
+    @GetPatientEmail VARCHAR(50), 
+    @GetPatientCountry VARCHAR(50), 
+    @GetPatientMembershipName VARCHAR(50), 
+    @GetPatientID INT OUTPUT
+ 
+AS
+DECLARE @PatientTypeID INT -- foriegn key 
+EXEC GetPatientTYPEID
+    @GetPatientMembershipName = @GetPatientMembershipName,
+    @GetPatientTypeID = @PatientTypeID OUTPUT
+
+SET @GetPatientID = (
+    SELECT Patient_ID
+    FROM Patients
+    WHERE Patient_TYPE_ID = @PatientTypeID AND 
+        First_Name = @GetPatientFName AND 
+        Last_Name = @GetPatientLName AND
+        Age = @GetPatientAge AND 
+        Gender = @GetPatientGender AND 
+        Phone_Number = @GetPatientPhoneNumber AND 
+        Email = @GetPatientEmail AND 
+        Country = @GetPatientCountry
+    )
+
+GO 
+
+CREATE OR ALTER PROCEDURE GetStaffID
+    @GetStaffFname VARCHAR(50),
+    @GetStaffLname VARCHAR(50),
+    @GetStaffJobTitle VARCHAR(50),
+    @GetStaffDepartmentName VARCHAR(50),
+    @GetStaffID INT OUTPUT
+    
+AS
+DECLARE @StaffTypeID INT -- foriegn key 
+EXEC GetStaffTYPEID
+    @GetStaffDepartmentName = @GetStaffDepartmentName, 
+    @GetStaffTypeID = @StaffTypeID OUTPUT
+
+SET @GetStaffID = (
+    SELECT Staff_ID
+    FROM Staff
+    WHERE Staff_TYPE_ID = @StaffTypeID AND 
+        First_Name = @GetStaffFname AND 
+        Last_Name = @GetStaffLname AND 
+        Job_Title = @GetStaffJobTitle
+    )
+
+-- Create insert stored procedures for transactional tables 
+GO 
+
+CREATE OR ALTER PROCEDURE StoredAppointmentPatientID
+    @ArrivalDate DATE,
+    @DepartureDate DATE, 
+    @AppointmentDate DATE,
+    @PatientFName VARCHAR(50),
+    @PatientLName VARCHAR(50),
+    @PatientAge INT,
+    @PatientGender VARCHAR(50), 
+    @PatientPhoneNumber VARCHAR(50), 
+    @PatientEmail VARCHAR(50), 
+    @PatientCountry VARCHAR(50), 
+    @PatientMembershipName VARCHAR(50), 
+    @IllnessName VARCHAR(50),
+    @IllnessCategoryName VARCHAR(50)
+   
+AS
+
+DECLARE @AppointmentID INT, @PatientID INT, @IllnessID INT
+EXEC GetAppointmentID
+    @GetAppointmentDate = @AppointmentDate,
+    @GetAppointmentID = @AppointmentID OUTPUT
+
+EXEC GetPatientID
+    @GetPatientFName = @PatientFName,
+    @GetPatientLName = @PatientLName,
+    @GetPatientAge = @PatientAge,
+    @GetPatientGender = @PatientGender, 
+    @GetPatientPhoneNumber = @PatientPhoneNumber, 
+    @GetPatientEmail = @PatientEmail, 
+    @GetPatientCountry = @PatientCountry, 
+    @GetPatientMembershipName = @PatientMembershipName, 
+    @GetPatientID = @PatientID OUTPUT
+
+EXEC GetIllnessID
+    @GetIllnessName = @IllnessName,
+    @GetIllnessCategoryName = @IllnessCategoryName,
+    @GetIllnessID =  @IllnessID OUTPUT
+
+BEGIN TRANSACTION N6
+INSERT INTO Appointment_Patient
+VALUES(@AppointmentID, @PatientID, @IllnessID,@ArrivalDate, @DepartureDate)
+COMMIT TRANSACTION N6
+
+GO
+
+CREATE OR ALTER PROCEDURE StoredAppointmentStaffID
+    @AppointmentDate DATE,
+    @StaffFname VARCHAR(50),
+    @StaffLname VARCHAR(50),
+    @StaffJobTitle VARCHAR(50),
+    @StaffDepartmentName VARCHAR(50)
+
+AS
+DECLARE @AppointID INT, @StaffID INT
+EXEC GetAppointmentID
+    @GetAppointmentDate = @AppointmentDate,
+    @GetAppointmentID = @AppointID OUTPUT
+
+EXEC GetStaffID
+    @GetStaffFname = @StaffFname,
+    @GetStaffLname = @StaffLname,
+    @GetStaffJobTitle = @StaffJobTitle,
+    @GetStaffDepartmentName = @StaffDepartmentName,
+    @GetStaffID = @StaffID OUTPUT
+
+BEGIN TRANSACTION N7
+INSERT INTO Appointment_Staff
+VALUES(@AppointID, @StaffID)
+COMMIT TRANSACTION N7
+
+GO 
+
+CREATE OR ALTER PROCEDURE StoredStaffEquipmentID
+    @EquipmentName VARCHAR(50),
+    @EquipmentCategoryName VARCHAR(50),
+    @StaffFname VARCHAR(50),
+    @StaffLname VARCHAR(50),
+    @StaffDepartmentName VARCHAR(50),
+    @StaffJobTitle VARCHAR(50)
+
+AS
+DECLARE @EquipmentID INT, @StaffID INT
+EXEC GetEquipmentID
+    @GetEquipmentName = @EquipmentName,
+    @GetEquipmentCategoryName = @EquipmentCategoryName,
+    @GetEquipmentID = @EquipmentID OUTPUT
+
+EXEC GetStaffID
+    @GetStaffFname = @StaffFname,
+    @GetStaffLname = @StaffLname,
+    @GetStaffDepartmentName = @StaffDepartmentName,
+    @GetStaffJobTitle = @StaffJobTitle,
+    @GetStaffID = @StaffID OUTPUT
+
+BEGIN TRANSACTION N8
+INSERT INTO Staff_Equipment
+VALUES(@EquipmentID, @StaffID)
+COMMIT TRANSACTION N8
+
+
+-- insert 8 rows into transactional table 
+
+EXEC StoredAppointmentPatientID
+    @ArrivalDate = '2023-05-01',
+    @DepartureDate = '2023-05-01', 
+    @AppointmentDate = '2023-05-01',
+    @PatientFName = 'Ollie',
+    @PatientLName = 'Kim',
+    @PatientAge = 34,
+    @PatientGender = 'Male', 
+    @PatientPhoneNumber = '42523212654', 
+    @PatientEmail = 'OllieL@gmail.com', 
+    @PatientCountry = 'United States', 
+    @PatientMembershipName = 'Basic',
+    @IllnessName = 'Bacterial Bronchitis',
+    @IllnessCategoryName = 'Bacterial infections'
+
+EXEC StoredAppointmentPatientID
+    @ArrivalDate = '2023-03-02',
+    @DepartureDate = '2023-03-02', 
+    @AppointmentDate = '2023-03-02',
+    @PatientFName = 'Allison',
+    @PatientLName = 'Adams',
+    @PatientAge = 10,
+    @PatientGender = 'Female', 
+    @PatientPhoneNumber = '4252217654', 
+    @PatientEmail = 'AlliAda@gmail.com', 
+    @PatientCountry = 'United States', 
+    @PatientMembershipName = 'Basic', 
+    @IllnessName = 'Giardia',
+    @IllnessCategoryName = 'Parasitic infections'
+
+  
+EXEC StoredAppointmentPatientID
+    @ArrivalDate = '2023-01-22',
+    @DepartureDate = '2023-01-23', 
+    @AppointmentDate = '2023-01-22',
+    @PatientFName = 'Jolly',
+    @PatientLName = 'Ran',
+    @PatientAge = 14,
+    @PatientGender = 'Female', 
+    @PatientPhoneNumber = '20623212654', 
+    @PatientEmail = 'Joli@gmail.com', 
+    @PatientCountry = 'United States', 
+    @PatientMembershipName = 'Standard',
+    @IllnessName = 'Heart attack',
+    @IllnessCategoryName = 'Viral infections'
+
+EXEC StoredAppointmentPatientID
+    @ArrivalDate = '2022-11-22',
+    @DepartureDate = '2022-11-22', 
+    @AppointmentDate = '2022-11-22',
+    @PatientFName = 'Elizabeth',
+    @PatientLName = 'Shiu',
+    @PatientAge = 50,
+    @PatientGender = 'Female', 
+    @PatientPhoneNumber = '21023212654', 
+    @PatientEmail = 'EliS@gmail.com', 
+    @PatientCountry = 'United States', 
+    @PatientMembershipName = 'Enhanced',
+    @IllnessName = 'Arrhythmia',
+    @IllnessCategoryName = 'Viral infections'
+
+EXEC StoredAppointmentPatientID
+    @ArrivalDate = '2023-01-14',
+    @DepartureDate = '2023-01-14', 
+    @AppointmentDate = '2023-01-14',
+    @PatientFName = 'Janes',
+    @PatientLName = 'Silverwood',
+    @PatientAge = 65,
+    @PatientGender = 'Male', 
+    @PatientPhoneNumber = '21053212260', 
+    @PatientEmail = 'SilverwoodJ@gmail.com', 
+    @PatientCountry = 'United States', 
+    @PatientMembershipName = 'Enhanced',
+    @IllnessName = 'Dementia',
+    @IllnessCategoryName = 'Transmissible spongiform encephalopathies'
+
+EXEC StoredAppointmentPatientID
+    @ArrivalDate = '2023-01-30',
+    @DepartureDate = '2023-01-31', 
+    @AppointmentDate = '2023-01-30',
+    @PatientFName = 'Hailey',
+    @PatientLName = 'Murakami',
+    @PatientAge = 11,
+    @PatientGender = 'Female', 
+    @PatientPhoneNumber = '2063217654', 
+    @PatientEmail = 'MuraHai@gmail.com', 
+    @PatientCountry = 'United States', 
+    @PatientMembershipName = 'Standard',
+    @IllnessName = 'Pneumonia',
+    @IllnessCategoryName = 'Bacterial infections'
+
+EXEC StoredAppointmentPatientID
+    @ArrivalDate = '2023-02-23',
+    @DepartureDate = '2023-02-23', 
+    @AppointmentDate = '2023-02-23',
+    @PatientFName = 'Annie',
+    @PatientLName = 'Johnson',
+    @PatientAge = 26,
+    @PatientGender = 'Female', 
+    @PatientPhoneNumber = '4257210654', 
+    @PatientEmail = 'AnJohn@gmail.com', 
+    @PatientCountry = 'United States', 
+    @PatientMembershipName = 'Basic',
+    @IllnessName = 'Vaginal Candidiasis',
+    @IllnessCategoryName = 'Fungal infections'
+
+EXEC StoredAppointmentPatientID
+    @ArrivalDate = '2023-04-17',
+    @DepartureDate = '2023-04-17', 
+    @AppointmentDate = '2023-04-17',
+    @PatientFName = 'Loey',
+    @PatientLName = 'Jeson',
+    @PatientAge = 12,
+    @PatientGender = 'Male', 
+    @PatientPhoneNumber = '2069210624', 
+    @PatientEmail = 'JesonLoey@gmail.com', 
+    @PatientCountry = 'United States', 
+    @PatientMembershipName = 'Enhanced',
+    @IllnessName = 'Type 1 Diabetes',
+    @IllnessCategoryName = 'Viral infections'
+
+
+EXEC StoredAppointmentStaffID
+    @AppointmentDate = '2023-05-01',
+    @StaffFname = 'Jennifer',
+    @StaffLname = 'Stones',
+    @StaffJobTitle = 'pulmonologist',
+    @StaffDepartmentName = 'Pediatrics'
+
+
+EXEC StoredAppointmentStaffID
+    @AppointmentDate = '2023-03-02',
+    @StaffFname = 'Adam',
+    @StaffLname = 'Steven',
+    @StaffJobTitle = 'gastrologist',
+    @StaffDepartmentName = 'Pathology'
+
+EXEC StoredAppointmentStaffID
+    @AppointmentDate = '2023-01-22',
+    @StaffFname = 'Leo',
+    @StaffLname = 'Levine',
+    @StaffJobTitle = 'doctor',
+    @StaffDepartmentName = 'Cardiology'
+
+EXEC StoredAppointmentStaffID
+    @AppointmentDate = '2022-11-22',
+    @StaffFname = 'James',
+    @StaffLname = 'Kim',
+    @StaffJobTitle = 'Nurse',
+    @StaffDepartmentName = 'Cardiology'
+
+EXEC StoredAppointmentStaffID
+    @AppointmentDate = '2022-01-14',
+    @StaffFname = 'Julian',
+    @StaffLname = 'Leaven',
+    @StaffJobTitle = 'Radiologic technologist',
+    @StaffDepartmentName = 'Pathology'
+
+EXEC StoredAppointmentStaffID
+    @AppointmentDate = '2022-01-30',
+    @StaffFname = 'Jimmy',
+    @StaffLname = 'Anderson',
+    @StaffJobTitle = 'Doctor',
+    @StaffDepartmentName = 'Pediatrics'
+
+EXEC StoredAppointmentStaffID
+    @AppointmentDate = '2022-02-23',
+    @StaffFname = 'Sherman',
+    @StaffLname = 'Lizio',
+    @StaffJobTitle = 'Doctor',
+    @StaffDepartmentName = 'Pediatric'
+
+EXEC StoredAppointmentStaffID
+    @AppointmentDate = '2022-04-17',
+    @StaffFname = 'Lizzy',
+    @StaffLname = 'Peterson',
+    @StaffJobTitle = 'Doctor',
+    @StaffDepartmentName = 'Urology'
+
+
+EXEC StoredStaffEquipmentID
+    @EquipmentName = 'Americomp Small Format Stationary X-ray Machine',
+    @EquipmentCategoryName = 'X-ray machine',
+    @StaffFname = 'Jennifer',
+    @StaffLname = 'Stones',
+    @StaffJobTitle = 'pulmonologist',
+    @StaffDepartmentName = 'Pediatrics'
+
+EXEC StoredStaffEquipmentID
+    @EquipmentName = '40X-1000X Trinocular Koehler LED Microscope with Touchscreen Imaging System',
+    @EquipmentCategoryName = 'X-ray machine',
+    @StaffFname = 'Adam',
+    @StaffLname = 'Steven',
+    @StaffJobTitle = 'gastrologist',
+    @StaffDepartmentName = 'Pathology'
+
+EXEC StoredStaffEquipmentID
+    @EquipmentName = '4SonoMe Vet H5C10L',
+    @EquipmentCategoryName = 'Ultrasound machine',
+    @StaffFname = 'Leo',
+    @StaffLname = 'Levine',
+    @StaffJobTitle = 'doctor',
+    @StaffDepartmentName = 'Cardiology'
+
+EXEC StoredStaffEquipmentID
+    @EquipmentName = 'Cardio7-S',
+    @EquipmentCategoryName = 'Electrocardiogram machine',
+    @StaffFname = 'James',
+    @StaffLname = 'Kim',
+    @StaffJobTitle = 'Nurse',
+    @StaffDepartmentName = 'Cardiology'
+
+EXEC StoredStaffEquipmentID
+    @EquipmentName = 'Hitachi Airis II .23',
+    @EquipmentCategoryName = 'Ultrasound machine',
+    @StaffFname = 'Julian',
+    @StaffLname = 'Leaven',
+    @StaffJobTitle = 'Radiologic technologist',
+    @StaffDepartmentName = 'Pathology'
+
+EXEC StoredStaffEquipmentID
+    @EquipmentName = 'MedPlus Semi-Electric Hospital Bed #32418',
+    @EquipmentCategoryName = 'Hospital bed',
+    @AppointmentDate = '2022-01-30',
+    @StaffFname = 'Jimmy',
+    @StaffLname = 'Anderson',
+    @StaffJobTitle = 'Doctor',
+    @StaffDepartmentName = 'Pediatrics'
+
+EXEC StoredStaffEquipmentID
+    @EquipmentName = '40X-1000X Trinocular Koehler',
+    @EquipmentCategoryName = 'X-ray machine',
+    @AppointmentDate = '2022-02-23',
+    @StaffFname = 'Sherman',
+    @StaffLname = 'Lizio',
+    @StaffJobTitle = 'Doctor',
+    @StaffDepartmentName = 'Pediatric'
+
+EXEC StoredStaffEquipmentID
+    @EquipmentName = 'Medtronic Minimed 770G Pump',
+    @EquipmentCategoryName = 'Infusion pump',
+    @AppointmentDate = '2022-04-17',
+     @StaffFname = 'Lizzy',
+    @StaffLname = 'Peterson',
+    @StaffJobTitle = 'Doctor',
+    @StaffDepartmentName = 'Urology'
+
+SELECT * FROM Staff_Equipment
